@@ -13,12 +13,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
@@ -39,11 +46,11 @@ import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.balex.stockforexcryptoquotes.R
+import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.Bar
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.presentation.getApplicationComponent
@@ -51,6 +58,7 @@ import com.balex.stockforexcryptoquotes.ui.theme.StockForexCryptoQuotesTheme
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.roundToInt
+
 
 private const val MIN_VISIBLE_BARS_COUNT = 20
 
@@ -66,9 +74,12 @@ fun Terminal(
         val screenState = viewModel.state.collectAsState(TerminalScreenState.Initial)
         when (val currentState = screenState.value) {
             is TerminalScreenState.Content -> {
-                val currentWidth = LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
-                val currentHeight = LocalConfiguration.current.screenHeightDp * LocalDensity.current.density
-                val terminalState = rememberTerminalState(bars = currentState.barList, currentWidth, currentHeight)
+                val currentWidth =
+                    LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
+                val currentHeight =
+                    LocalConfiguration.current.screenHeightDp * LocalDensity.current.density
+                val terminalState =
+                    rememberTerminalState(bars = currentState.barList, currentWidth, currentHeight)
                 Chart(
                     modifier = modifier,
                     terminalState = terminalState,
@@ -76,6 +87,14 @@ fun Terminal(
                         terminalState.value = it
                     },
                     timeFrame = currentState.timeFrame
+                )
+
+                DropDownAssetsType(
+                    modifier = modifier,
+                    terminalState,
+                    onTerminalStateChanged = {
+                        terminalState.value = it
+                    }
                 )
 
                 currentState.barList.firstOrNull()?.let {
@@ -104,7 +123,7 @@ fun Terminal(
 
             is TerminalScreenState.Error -> {
                 ErrorScreen(
-                    onRefreshButtonClickListener =  { viewModel.refreshQuotes(TIME_FRAME_DEFAULT) }
+                    onRefreshButtonClickListener = { viewModel.refreshQuotes(TIME_FRAME_DEFAULT) }
                 )
             }
 
@@ -200,35 +219,34 @@ private fun Chart(
         translate(left = currentState.scrolledBy) {
 
 
-
             currentState.barList.forEachIndexed { index, bar ->
                 val offsetX = size.width - index * currentState.barWidth
 
-                    drawLine(
-                        color = Color.White,
-                        start = Offset(offsetX, size.height - (bar.low - min) * pxPerPoint),
-                        end = Offset(offsetX, size.height - (bar.high - min) * pxPerPoint),
-                        strokeWidth = 1f
-                    )
-                    drawLine(
-                        color = if (bar.open < bar.close) Color.Green else Color.Red,
-                        start = Offset(offsetX, size.height - (bar.open - min) * pxPerPoint),
-                        end = Offset(offsetX, size.height - (bar.close - min) * pxPerPoint),
-                        strokeWidth = currentState.barWidth / 2
-                    )
+                drawLine(
+                    color = Color.White,
+                    start = Offset(offsetX, size.height - (bar.low - min) * pxPerPoint),
+                    end = Offset(offsetX, size.height - (bar.high - min) * pxPerPoint),
+                    strokeWidth = 1f
+                )
+                drawLine(
+                    color = if (bar.open < bar.close) Color.Green else Color.Red,
+                    start = Offset(offsetX, size.height - (bar.open - min) * pxPerPoint),
+                    end = Offset(offsetX, size.height - (bar.close - min) * pxPerPoint),
+                    strokeWidth = currentState.barWidth / 2
+                )
 
 
-                    drawTimeDelimiter(
-                        bar = bar,
-                        nextBar = if (index < currentState.barList.size - 1) {
-                            currentState.barList[index + 1]
-                        } else {
-                            null
-                        },
-                        timeFrame = timeFrame,
-                        offsetX = offsetX,
-                        textMeasurer = textMeasurer
-                    )
+                drawTimeDelimiter(
+                    bar = bar,
+                    nextBar = if (index < currentState.barList.size - 1) {
+                        currentState.barList[index + 1]
+                    } else {
+                        null
+                    },
+                    timeFrame = timeFrame,
+                    offsetX = offsetX,
+                    textMeasurer = textMeasurer
+                )
 
             }
         }
@@ -285,13 +303,64 @@ private fun ErrorScreen(
             Spacer(modifier = Modifier.height(100.dp))
             Button(onClick = { onRefreshButtonClickListener() })
             {
-                    Text(text = "Refresh")
-                }
+                Text(text = "Refresh")
+            }
 
         }
     }
 }
 
+@Composable
+fun DropDownAssetsType(
+    modifier: Modifier = Modifier,
+    terminalState: State<TerminalState>,
+    onTerminalStateChanged: (TerminalState) -> Unit,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier.padding(16.dp)
+        ) {
+            Text("Selected Option: ${terminalState.value.selectedOption}")
+            Spacer(modifier = Modifier.width(16.dp))
+            IconButton(onClick = {
+                onTerminalStateChanged(
+                    terminalState.value.copy(
+                        expanded = !terminalState.value.expanded
+                    )
+                )
+
+            }) {
+                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+        }
+        DropdownMenu(
+            expanded = terminalState.value.expanded,
+            onDismissRequest = {
+                onTerminalStateChanged(
+                    terminalState.value.copy(
+                        expanded = false
+                    )
+                )
+            },
+            modifier = Modifier.width(200.dp)
+        ) {
+            AssetList.entries.toTypedArray().forEach { option ->
+                DropdownMenuItem(
+                    onClick ={
+                    onTerminalStateChanged(
+                        terminalState.value.copy(
+                            selectedOption = option,
+                            expanded = false
+                        )
+                    )
+                },
+                    text = { Text(text =  option.value) }
+                )
+            }
+        }
+    }
+}
 
 @SuppressLint("DefaultLocale")
 private fun DrawScope.drawTimeDelimiter(
@@ -443,12 +512,6 @@ private fun DrawScope.drawDashedLine(
             )
         )
     )
-}
-
-@Composable
-fun DpToPx(dp: Dp): Float {
-    val density = LocalDensity.current
-    return with(density) { dp.toPx() }
 }
 
 private val TIME_FRAME_DEFAULT = TimeFrame.HOUR_1
