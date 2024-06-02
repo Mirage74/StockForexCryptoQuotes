@@ -2,13 +2,13 @@ package com.balex.stockforexcryptoquotes.domain.entity
 
 data class CryptoList(
     val cryptoList: List<Asset> = listOf(
-        Asset("X:BTCUSD", "Bitcoin - United States Dollar"),
-        Asset("X:ETHUSD", "Ethereum - United States Dollar"),
-        Asset("X:SOLUSD", "Solana - United States Dollar"),
-        Asset("X:XRPUSD", "Ripple - United States Dollar"),
-        Asset("X:DOGEUSD", "Dogecoin - United States Dollar"),
-        Asset("X:ADAUSD", "Cardano - United States Dollar"),
-        Asset("X:SHIBUSD", "Shiba Inu - United States Dollar"),
-        Asset("X:AVAXUSD", "Avalanche - United States Dollar")
+        Asset("X:BTCUSD", "Bitcoin / USD"),
+        Asset("X:ETHUSD", "Ethereum / USD"),
+        Asset("X:SOLUSD", "Solana / USD"),
+        Asset("X:XRPUSD", "Ripple / USD"),
+        Asset("X:DOGEUSD", "Dogecoin / USD"),
+        Asset("X:ADAUSD", "Cardano / USD"),
+        Asset("X:SHIBUSD", "Shiba Inu / USD"),
+        Asset("X:AVAXUSD", "Avalanche / USD")
     )
 )

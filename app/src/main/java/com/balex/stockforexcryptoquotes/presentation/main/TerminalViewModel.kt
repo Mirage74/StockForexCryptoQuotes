@@ -25,7 +25,6 @@ class TerminalViewModel @Inject constructor(
 
 
     val state = quotesFlow
-        //.filter { it.barList.isNotEmpty() }
         .map {
             if (it.isErrorInitialLoading) {
                 TerminalScreenState.Error

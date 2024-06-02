@@ -3,6 +3,7 @@ package com.balex.stockforexcryptoquotes.presentation.main
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +51,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.balex.stockforexcryptoquotes.R
+import com.balex.stockforexcryptoquotes.domain.entity.Asset
 import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.Bar
+import com.balex.stockforexcryptoquotes.domain.entity.CryptoList
+import com.balex.stockforexcryptoquotes.domain.entity.ForexPairList
+import com.balex.stockforexcryptoquotes.domain.entity.StockList
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.presentation.getApplicationComponent
 import com.balex.stockforexcryptoquotes.ui.theme.StockForexCryptoQuotesTheme
@@ -89,13 +94,20 @@ fun Terminal(
                     timeFrame = currentState.timeFrame
                 )
 
-                DropDownAssetsType(
-                    modifier = modifier,
-                    terminalState,
-                    onTerminalStateChanged = {
-                        terminalState.value = it
-                    }
-                )
+                Column {
+
+                    TimeFrames(
+                        selectedFrame = currentState.timeFrame,
+                        onTimeFrameSelected = { viewModel.refreshQuotes(it) }
+                    )
+                    DropDownAssetsType(
+                        terminalState,
+                        onTerminalStateChanged = {
+                            terminalState.value = it
+                        }
+                    )
+                }
+
 
                 currentState.barList.firstOrNull()?.let {
                     Prices(
@@ -104,10 +116,7 @@ fun Terminal(
                         lastPrice = it.close
                     )
                 }
-                TimeFrames(
-                    selectedFrame = currentState.timeFrame,
-                    onTimeFrameSelected = { viewModel.refreshQuotes(it) }
-                )
+
             }
 
             is TerminalScreenState.Loading -> {
@@ -142,7 +151,7 @@ private fun TimeFrames(
     Row(
         modifier = Modifier
             .wrapContentSize()
-            .padding(16.dp),
+            .padding(16.dp, 16.dp, 16.dp, 0.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         TimeFrame.entries.forEach { timeFrame ->
@@ -197,7 +206,7 @@ private fun Chart(
             .background(Color.Black)
             .clipToBounds()
             .padding(
-                top = 32.dp,
+                top = 64.dp,
                 bottom = 32.dp,
                 end = 32.dp
             )
@@ -206,7 +215,7 @@ private fun Chart(
                 onTerminalStateChanged(
                     currentState.copy(
                         terminalWidth = it.width.toFloat(),
-                        terminalHeight = it.height.toFloat()
+                        terminalHeight = (it.height).toFloat()
                     ),
                 )
             }
@@ -312,55 +321,180 @@ private fun ErrorScreen(
 
 @Composable
 fun DropDownAssetsType(
-    modifier: Modifier = Modifier,
     terminalState: State<TerminalState>,
     onTerminalStateChanged: (TerminalState) -> Unit,
 ) {
     Column {
+        ShowOptionsDropMenu(terminalState, onTerminalStateChanged)
+        Spacer(modifier = Modifier.height(8.dp))
+        ShowAssetsDropMenu(terminalState, onTerminalStateChanged)
+    }
+
+}
+
+
+@Composable
+fun ShowOptionsDropMenu(
+    terminalState: State<TerminalState>,
+    onTerminalStateChanged: (TerminalState) -> Unit,
+) {
+
+    Column(
+        modifier = Modifier
+            .padding(16.dp, 0.dp, 0.dp, 0.dp)
+            .background(Color.White)
+            .border(width = 1.dp, color = Color.Black)
+    ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = modifier.padding(16.dp)
+            modifier = Modifier
+                .height(24.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Selected Option: ${terminalState.value.selectedOption}")
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = {
                 onTerminalStateChanged(
                     terminalState.value.copy(
-                        expanded = !terminalState.value.expanded
+                        isChooseOptionDropMenuExpanded = !terminalState.value.isChooseOptionDropMenuExpanded
                     )
                 )
-
             }) {
                 Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
             }
         }
+
         DropdownMenu(
-            expanded = terminalState.value.expanded,
+            expanded = terminalState.value.isChooseOptionDropMenuExpanded,
             onDismissRequest = {
                 onTerminalStateChanged(
                     terminalState.value.copy(
-                        expanded = false
+                        isChooseOptionDropMenuExpanded = false
                     )
                 )
             },
-            modifier = Modifier.width(200.dp)
+
+            modifier = Modifier
+                .width(100.dp)
+                .background(Color.White)
+                .padding(0.dp)
+                .border(1.dp, Color.Black)
+
         ) {
-            AssetList.entries.toTypedArray().forEach { option ->
+
+            AssetList.entries.forEach { option ->
                 DropdownMenuItem(
-                    onClick ={
-                    onTerminalStateChanged(
-                        terminalState.value.copy(
-                            selectedOption = option,
-                            expanded = false
+                    modifier = Modifier
+                        .padding(0.dp),
+                    onClick = {
+                        val selectedAssetDefault = when (option) {
+                            AssetList.STOCKS -> Asset.DEFAULT_STOCK
+                            AssetList.FOREX -> Asset.DEFAULT_FOREX
+                            AssetList.CRYPTO -> Asset.DEFAULT_CRYPTO
+                        }
+                        onTerminalStateChanged(
+                            terminalState.value.copy(
+                                selectedOption = option,
+                                selectedAsset = selectedAssetDefault,
+                                isChooseOptionDropMenuExpanded = false,
+                                isChooseAssetDropMenuExpanded = true
+                            )
                         )
-                    )
-                },
-                    text = { Text(text =  option.value) }
+                    },
+                    text = {
+                        Text(
+                            text = option.value,
+                            fontSize = LIST_OPTIONS_TEXT_SIZE
+                        )
+                    },
                 )
             }
         }
     }
 }
+
+@Composable
+fun ShowAssetsDropMenu(
+    terminalState: State<TerminalState>,
+    onTerminalStateChanged: (TerminalState) -> Unit,
+) {
+
+    Column(
+        modifier = Modifier
+            .padding(16.dp, 0.dp, 0.dp, 0.dp)
+            .background(Color.White)
+            .border(width = 1.dp, color = Color.Black)
+    ) {
+        Row(
+            modifier = Modifier
+                .height(24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Selected Asset : ${terminalState.value.selectedAsset.symbol.trim()}")
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(onClick = {
+                onTerminalStateChanged(
+                    terminalState.value.copy(
+                        isChooseAssetDropMenuExpanded = !terminalState.value.isChooseAssetDropMenuExpanded
+                    )
+                )
+            }) {
+                Icon(imageVector = Icons.Filled.ArrowDropDown, contentDescription = null)
+            }
+        }
+
+        DropdownMenu(
+            expanded = terminalState.value.isChooseAssetDropMenuExpanded,
+            onDismissRequest = {
+                onTerminalStateChanged(
+                    terminalState.value.copy(
+                        isChooseAssetDropMenuExpanded = false
+                    )
+                )
+            },
+
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(0.dp)
+                .border(1.dp, Color.Black)
+
+        ) {
+            val currentAssetsList: List<Asset> = when (terminalState.value.selectedOption) {
+                AssetList.STOCKS -> {
+                    StockList().stockList
+                }
+                AssetList.FOREX -> {
+                    ForexPairList().forexPairList
+                }
+                AssetList.CRYPTO -> {
+                    CryptoList().cryptoList
+                }
+            }
+            currentAssetsList.forEach { asset ->
+                DropdownMenuItem(
+                    modifier = Modifier
+                        .padding(0.dp),
+                    onClick = {
+                        onTerminalStateChanged(
+                            terminalState.value.copy(
+                                selectedAsset = Asset(asset.symbol.trim(), asset.description.trim()),
+                                isChooseAssetDropMenuExpanded = false
+                            )
+                        )
+                    },
+                    text = {
+                        Text(
+                            modifier = Modifier.fillMaxSize(),
+                            text = "${asset.symbol}: ${asset.description}",
+                            fontSize = LIST_ASSETS_TEXT_SIZE
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
 
 @SuppressLint("DefaultLocale")
 private fun DrawScope.drawTimeDelimiter(
@@ -515,3 +649,5 @@ private fun DrawScope.drawDashedLine(
 }
 
 private val TIME_FRAME_DEFAULT = TimeFrame.HOUR_1
+private val LIST_OPTIONS_TEXT_SIZE = 24.sp
+private val LIST_ASSETS_TEXT_SIZE = 20.sp

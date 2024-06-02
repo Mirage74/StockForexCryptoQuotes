@@ -24,3 +24,4 @@ data class StockList(
         Asset("VAL", "Valaris Limited")
     )
 )
+

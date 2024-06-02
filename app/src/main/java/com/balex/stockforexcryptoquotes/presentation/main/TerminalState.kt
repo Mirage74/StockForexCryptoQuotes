@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import com.balex.stockforexcryptoquotes.domain.entity.Asset
 import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.Bar
 import kotlinx.parcelize.Parcelize
@@ -17,8 +18,10 @@ data class TerminalState(
     val terminalWidth: Float = 1f,
     val terminalHeight: Float = 2f,
     val scrolledBy: Float = 0f,
-    val expanded: Boolean = true,
-    val selectedOption: AssetList = AssetList.STOCKS
+    val isChooseOptionDropMenuExpanded: Boolean = false,
+    val isChooseAssetDropMenuExpanded: Boolean = false,
+    val selectedOption: AssetList = AssetList.STOCKS,
+    val selectedAsset: Asset = Asset.DEFAULT_STOCK
 ) : Parcelable {
     val barWidth: Float
         get() = terminalWidth / visibleBarsCount
