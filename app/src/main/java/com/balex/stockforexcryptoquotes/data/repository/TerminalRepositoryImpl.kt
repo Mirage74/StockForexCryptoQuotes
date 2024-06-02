@@ -3,6 +3,8 @@ package com.balex.stockforexcryptoquotes.data.repository
 import com.balex.stockforexcryptoquotes.data.mapper.QuotesMapper
 import com.balex.stockforexcryptoquotes.data.model.QuotesAndFrame
 import com.balex.stockforexcryptoquotes.data.network.ApiService
+import com.balex.stockforexcryptoquotes.domain.entity.Asset
+import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.domain.repository.TerminalRepository
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -14,13 +16,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 
 class TerminalRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
     private val mapper: QuotesMapper
-): TerminalRepository {
+) : TerminalRepository {
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -31,9 +35,9 @@ class TerminalRepositoryImpl @Inject constructor(
             _quotesListAndFrame = _quotesListAndFrameLastState
         }
         //isQuotesListNeedRefreshFlow.tryEmit(Unit)
-            coroutineScope.launch() {
-                isQuotesListNeedRefreshFlow.emit(Unit)
-            }
+        coroutineScope.launch() {
+            isQuotesListNeedRefreshFlow.emit(Unit)
+        }
     }
 
 
@@ -41,19 +45,25 @@ class TerminalRepositoryImpl @Inject constructor(
 
     private var _quotesListAndFrame = QuotesAndFrame(isLoading = true)
     private val quotesListAndFrame: QuotesAndFrame
-        get() = QuotesAndFrame(
-            _quotesListAndFrame.barList.toList(),
-            _quotesListAndFrame.timeFrame,
-            _quotesListAndFrame.isLoading,
-            _quotesListAndFrame.isErrorInitialLoading
-        )
+        get() =
+            QuotesAndFrame(
+                _quotesListAndFrame.barList.toList(),
+                _quotesListAndFrame.timeFrame,
+                _quotesListAndFrame.isLoading,
+                _quotesListAndFrame.isErrorInitialLoading,
+                _quotesListAndFrame.selectedOption,
+                _quotesListAndFrame.selectedAsset
+            )
 
     private val isQuotesListNeedRefreshFlow = MutableSharedFlow<Unit>(replay = 1)
 
 
     override fun getQuotes(): StateFlow<QuotesAndFrame> = flow {
-        coroutineScope.launch (exceptionHandler) {
-            val newQuotesAndFrame = QuotesAndFrame(mapper.mapResponseToQuotes(apiService.loadBars().barList), TIME_FRAME_DEFAULT)
+        coroutineScope.launch(exceptionHandler) {
+            val newQuotesAndFrame = QuotesAndFrame(
+                mapper.mapResponseToQuotes(apiService.loadBars(dateTo = getCurrentDate()).barList),
+                TIME_FRAME_DEFAULT
+            )
             _quotesListAndFrame = newQuotesAndFrame
             isQuotesListNeedRefreshFlow.emit(Unit)
         }
@@ -67,18 +77,32 @@ class TerminalRepositoryImpl @Inject constructor(
             initialValue = quotesListAndFrame
         )
 
-    override fun refreshQuotes(timeFrame: TimeFrame){
+    override fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList) {
         _quotesListAndFrameLastState = _quotesListAndFrame
-        coroutineScope.launch (exceptionHandler) {
+        coroutineScope.launch(exceptionHandler) {
             _quotesListAndFrame = QuotesAndFrame(isLoading = true)
             isQuotesListNeedRefreshFlow.emit(Unit)
             val newQuotesAndFrame = QuotesAndFrame(
-                mapper.mapResponseToQuotes(apiService.loadBars(timeFrame = timeFrame.value).barList),
-                timeFrame
+                mapper.mapResponseToQuotes(
+                    apiService.loadBars(
+                        timeFrame = timeFrame.value,
+                        asset_code = asset.symbol,
+                        dateTo = getCurrentDate()
+                    ).barList
+                ),
+                timeFrame,
+                selectedOption = option,
+                selectedAsset = asset
             )
             _quotesListAndFrame = newQuotesAndFrame
             isQuotesListNeedRefreshFlow.emit(Unit)
         }
+    }
+
+    private fun getCurrentDate(): String {
+        val currentDate = LocalDate.now()
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        return currentDate.format(formatter)
     }
 
     companion object {

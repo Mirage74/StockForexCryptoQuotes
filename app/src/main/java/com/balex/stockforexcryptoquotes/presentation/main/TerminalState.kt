@@ -39,8 +39,8 @@ data class TerminalState(
         get() = terminalHeight / (max - min)
 }
 @Composable
-fun rememberTerminalState(bars: List<Bar>, width: Float, height: Float): MutableState<TerminalState> {
+fun rememberTerminalState(bars: List<Bar>, selectedOption: AssetList, selectedAsset: Asset, width: Float, height: Float): MutableState<TerminalState> {
     return rememberSaveable(bars.hashCode()) {
-        mutableStateOf(TerminalState(barList = bars, terminalWidth = width, terminalHeight = height))
+        mutableStateOf(TerminalState(barList = bars, selectedOption = selectedOption, selectedAsset = selectedAsset, terminalWidth = width, terminalHeight = height))
     }
 }

@@ -1,15 +1,13 @@
 package com.balex.stockforexcryptoquotes.presentation.main
 
 import androidx.lifecycle.ViewModel
+import com.balex.stockforexcryptoquotes.domain.entity.Asset
+import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.domain.usecases.GetQuotesUseCase
 import com.balex.stockforexcryptoquotes.domain.usecases.RefreshQuotesUseCase
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class TerminalViewModel @Inject constructor(
@@ -19,10 +17,9 @@ class TerminalViewModel @Inject constructor(
 
     private val quotesFlow = getQuotesUseCase()
 
-    fun refreshQuotes(timeFrame: TimeFrame) {
-        refreshQuotesUseCase(timeFrame)
+    fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList) {
+        refreshQuotesUseCase(timeFrame, asset, option)
     }
-
 
     val state = quotesFlow
         .map {
@@ -32,7 +29,9 @@ class TerminalViewModel @Inject constructor(
                 if (!it.isLoading) {
                     TerminalScreenState.Content(
                         barList = it.barList,
-                        timeFrame = it.timeFrame
+                        timeFrame = it.timeFrame,
+                        selectedOption = it.selectedOption,
+                        selectedAsset = it.selectedAsset
                     ) as TerminalScreenState
                 } else {
                     TerminalScreenState.Loading

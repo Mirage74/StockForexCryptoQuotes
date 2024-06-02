@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -60,6 +65,7 @@ import com.balex.stockforexcryptoquotes.domain.entity.StockList
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.presentation.getApplicationComponent
 import com.balex.stockforexcryptoquotes.ui.theme.StockForexCryptoQuotesTheme
+import java.time.Year
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -84,7 +90,13 @@ fun Terminal(
                 val currentHeight =
                     LocalConfiguration.current.screenHeightDp * LocalDensity.current.density
                 val terminalState =
-                    rememberTerminalState(bars = currentState.barList, currentWidth, currentHeight)
+                    rememberTerminalState(
+                        bars = currentState.barList,
+                        selectedOption = currentState.selectedOption,
+                        selectedAsset = currentState.selectedAsset,
+                        currentWidth,
+                        currentHeight
+                    )
                 Chart(
                     modifier = modifier,
                     terminalState = terminalState,
@@ -98,12 +110,26 @@ fun Terminal(
 
                     TimeFrames(
                         selectedFrame = currentState.timeFrame,
-                        onTimeFrameSelected = { viewModel.refreshQuotes(it) }
+                        onTimeFrameSelected = {
+                            viewModel.refreshQuotes(
+                                it,
+                                terminalState.value.selectedAsset,
+                                terminalState.value.selectedOption
+                            )
+                        }
                     )
                     DropDownAssetsType(
                         terminalState,
                         onTerminalStateChanged = {
                             terminalState.value = it
+                        },
+                        onAssetSelected = {
+                            terminalState.value = it
+                            viewModel.refreshQuotes(
+                                currentState.timeFrame,
+                                terminalState.value.selectedAsset,
+                                terminalState.value.selectedOption
+                            )
                         }
                     )
                 }
@@ -132,7 +158,13 @@ fun Terminal(
 
             is TerminalScreenState.Error -> {
                 ErrorScreen(
-                    onRefreshButtonClickListener = { viewModel.refreshQuotes(TIME_FRAME_DEFAULT) }
+                    onRefreshButtonClickListener = {
+                        viewModel.refreshQuotes(
+                            TIME_FRAME_DEFAULT,
+                            Asset.DEFAULT_STOCK,
+                            AssetList.STOCKS
+                        )
+                    }
                 )
             }
 
@@ -323,11 +355,12 @@ private fun ErrorScreen(
 fun DropDownAssetsType(
     terminalState: State<TerminalState>,
     onTerminalStateChanged: (TerminalState) -> Unit,
+    onAssetSelected: (TerminalState) -> Unit
 ) {
-    Column {
+    Row {
         ShowOptionsDropMenu(terminalState, onTerminalStateChanged)
-        Spacer(modifier = Modifier.height(8.dp))
-        ShowAssetsDropMenu(terminalState, onTerminalStateChanged)
+        Spacer(modifier = Modifier.width(8.dp))
+        ShowAssetsDropMenu(terminalState, onTerminalStateChanged, onAssetSelected)
     }
 
 }
@@ -336,7 +369,7 @@ fun DropDownAssetsType(
 @Composable
 fun ShowOptionsDropMenu(
     terminalState: State<TerminalState>,
-    onTerminalStateChanged: (TerminalState) -> Unit,
+    onTerminalStateChanged: (TerminalState) -> Unit
 ) {
 
     Column(
@@ -350,8 +383,17 @@ fun ShowOptionsDropMenu(
                 .height(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Selected Option: ${terminalState.value.selectedOption}")
-            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                modifier = Modifier.clickable {
+                    onTerminalStateChanged(
+                        terminalState.value.copy(
+                            isChooseOptionDropMenuExpanded = !terminalState.value.isChooseOptionDropMenuExpanded
+                        )
+                    )
+                },
+                text = "Option: ${terminalState.value.selectedOption}"
+            )
+            Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = {
                 onTerminalStateChanged(
                     terminalState.value.copy(
@@ -384,7 +426,8 @@ fun ShowOptionsDropMenu(
             AssetList.entries.forEach { option ->
                 DropdownMenuItem(
                     modifier = Modifier
-                        .padding(0.dp),
+                        .padding(0.dp)
+                        .border(1.dp, Color.LightGray),
                     onClick = {
                         val selectedAssetDefault = when (option) {
                             AssetList.STOCKS -> Asset.DEFAULT_STOCK
@@ -416,6 +459,7 @@ fun ShowOptionsDropMenu(
 fun ShowAssetsDropMenu(
     terminalState: State<TerminalState>,
     onTerminalStateChanged: (TerminalState) -> Unit,
+    onAssetSelected: (TerminalState) -> Unit
 ) {
 
     Column(
@@ -429,8 +473,17 @@ fun ShowAssetsDropMenu(
                 .height(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Selected Asset : ${terminalState.value.selectedAsset.symbol.trim()}")
-            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                modifier = Modifier.clickable {
+                    onTerminalStateChanged(
+                        terminalState.value.copy(
+                            isChooseAssetDropMenuExpanded = !terminalState.value.isChooseAssetDropMenuExpanded
+                        )
+                    )
+                },
+                text = "Asset : ${terminalState.value.selectedAsset.symbol.trim()}"
+            )
+            Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = {
                 onTerminalStateChanged(
                     terminalState.value.copy(
@@ -458,26 +511,33 @@ fun ShowAssetsDropMenu(
                 .padding(0.dp)
                 .border(1.dp, Color.Black)
 
+
         ) {
             val currentAssetsList: List<Asset> = when (terminalState.value.selectedOption) {
                 AssetList.STOCKS -> {
                     StockList().stockList
                 }
+
                 AssetList.FOREX -> {
                     ForexPairList().forexPairList
                 }
+
                 AssetList.CRYPTO -> {
                     CryptoList().cryptoList
                 }
             }
-            currentAssetsList.forEach { asset ->
+            currentAssetsList.forEachIndexed { index, asset ->
                 DropdownMenuItem(
                     modifier = Modifier
-                        .padding(0.dp),
+                        .padding(0.dp)
+                        .border(1.dp, Color.LightGray),
                     onClick = {
-                        onTerminalStateChanged(
+                        onAssetSelected(
                             terminalState.value.copy(
-                                selectedAsset = Asset(asset.symbol.trim(), asset.description.trim()),
+                                selectedAsset = Asset(
+                                    asset.symbol.trim(),
+                                    asset.description.trim()
+                                ),
                                 isChooseAssetDropMenuExpanded = false
                             )
                         )
@@ -509,7 +569,9 @@ private fun DrawScope.drawTimeDelimiter(
     val minutes = calendar.get(Calendar.MINUTE)
     val hours = calendar.get(Calendar.HOUR_OF_DAY)
     val day = calendar.get(Calendar.DAY_OF_MONTH)
+    val week = calendar.get(Calendar.WEEK_OF_MONTH)
     val month = calendar.get(Calendar.MONTH)
+    val year = calendar.get(Calendar.YEAR)
 
     val shouldDrawDelimiter = when (timeFrame) {
         TimeFrame.MIN_5 -> {
@@ -527,7 +589,7 @@ private fun DrawScope.drawTimeDelimiter(
 
         TimeFrame.WEEK_1 -> {
             val nextBarMonth = nextBar?.calendar?.get(Calendar.MONTH)
-            month != nextBarMonth
+            (month % 2 == 0) && (week == 1)
         }
     }
     if (!shouldDrawDelimiter) return
@@ -548,8 +610,12 @@ private fun DrawScope.drawTimeDelimiter(
             String.format("%02d:00", hours)
         }
 
-        TimeFrame.HOUR_1, TimeFrame.DAY_1, TimeFrame.WEEK_1 -> {
+        TimeFrame.HOUR_1, TimeFrame.DAY_1 -> {
             String.format("%s %s", day, nameOfMonth)
+        }
+
+        TimeFrame.WEEK_1 -> {
+            String.format("%s-%s-%s", day, nameOfMonth, year )
         }
 
     }
