@@ -1,6 +1,7 @@
 package com.balex.stockforexcryptoquotes.presentation.main
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -112,6 +113,7 @@ fun Terminal(
                 )
 
                 Column {
+                    Log.d("Terminal", "TimeFrames")
 
                     TimeFrames(
                         selectedFrame = currentState.timeFrame,
@@ -221,6 +223,7 @@ private fun Chart(
     timeFrame: TimeFrame
 
 ) {
+    Log.d("Terminal", "Chart")
     val currentState = terminalState.value
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
         val visibleBarsCount = (currentState.visibleBarsCount / zoomChange).roundToInt()
@@ -307,6 +310,7 @@ private fun Prices(
     terminalState: State<TerminalState>,
     lastPrice: Float
 ) {
+    Log.d("Terminal", "Prices")
     val currentState = terminalState.value
     val textMeasurer = rememberTextMeasurer()
     val max = currentState.max
