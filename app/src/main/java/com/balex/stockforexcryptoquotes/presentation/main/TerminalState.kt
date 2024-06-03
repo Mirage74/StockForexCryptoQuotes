@@ -18,8 +18,6 @@ data class TerminalState(
     val terminalWidth: Float = 1f,
     val terminalHeight: Float = 2f,
     val scrolledBy: Float = 0f,
-    val isChooseOptionDropMenuExpanded: Boolean = false,
-    val isChooseAssetDropMenuExpanded: Boolean = false,
     val selectedOption: AssetList = AssetList.STOCKS,
     val selectedAsset: Asset = Asset.DEFAULT_STOCK
 ) : Parcelable {
