@@ -3,7 +3,13 @@ package com.balex.stockforexcryptoquotes.presentation.main.screen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.DropdownMenu
@@ -12,36 +18,43 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.*
+import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.balex.stockforexcryptoquotes.domain.entity.*
-import com.balex.stockforexcryptoquotes.presentation.main.TerminalState
+import com.balex.stockforexcryptoquotes.domain.entity.Asset
+import com.balex.stockforexcryptoquotes.domain.entity.AssetList
+import com.balex.stockforexcryptoquotes.domain.entity.CryptoList
+import com.balex.stockforexcryptoquotes.domain.entity.ForexPairList
+import com.balex.stockforexcryptoquotes.domain.entity.StockList
+import com.balex.stockforexcryptoquotes.presentation.main.TerminalDropDownMenuState
 
 private val LIST_OPTIONS_TEXT_SIZE = 24.sp
 private val LIST_ASSETS_TEXT_SIZE = 20.sp
 
 @Composable
 fun DropDownAssetsType(
-    terminalState: State<TerminalState>,
-    onTerminalStateChanged: (TerminalState) -> Unit,
-    onAssetSelected: (TerminalState) -> Unit
+    dropDownMenuState: State<TerminalDropDownMenuState>,
+    onDropDownMenuStateChanged: (TerminalDropDownMenuState) -> Unit,
+    onAssetSelected: (TerminalDropDownMenuState) -> Unit
 ) {
     Row {
-        ShowOptionsDropMenu(terminalState, onTerminalStateChanged)
+        ShowOptionsDropMenu(dropDownMenuState, onDropDownMenuStateChanged)
         Spacer(modifier = Modifier.width(8.dp))
-        ShowAssetsDropMenu(terminalState, onAssetSelected)
+        ShowAssetsDropMenu(dropDownMenuState, onAssetSelected)
     }
 }
 
 @Composable
 fun ShowOptionsDropMenu(
-    terminalState: State<TerminalState>,
-    onTerminalStateChanged: (TerminalState) -> Unit
+    dropDownMenuState: State<TerminalDropDownMenuState>,
+    onDropDownMenuStateChanged: (TerminalDropDownMenuState) -> Unit
 ) {
     var isChooseOptionDropMenuExpanded by rememberSaveable { mutableStateOf(false) }
 
@@ -60,7 +73,7 @@ fun ShowOptionsDropMenu(
                 modifier = Modifier.clickable {
                     isChooseOptionDropMenuExpanded = !isChooseOptionDropMenuExpanded
                 },
-                text = "Option: ${terminalState.value.selectedOption}"
+                text = "Option: ${dropDownMenuState.value.selectedOption}"
             )
             Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = {
@@ -96,8 +109,8 @@ fun ShowOptionsDropMenu(
                             AssetList.CRYPTO -> Asset.DEFAULT_CRYPTO
                         }
                         isChooseOptionDropMenuExpanded = false
-                        onTerminalStateChanged(
-                            terminalState.value.copy(
+                        onDropDownMenuStateChanged(
+                            dropDownMenuState.value.copy(
                                 selectedOption = option,
                                 selectedAsset = selectedAssetDefault
                             )
@@ -117,8 +130,8 @@ fun ShowOptionsDropMenu(
 
 @Composable
 fun ShowAssetsDropMenu(
-    terminalState: State<TerminalState>,
-    onAssetSelected: (TerminalState) -> Unit
+    terminalChartState: State<TerminalDropDownMenuState>,
+    onAssetSelected: (TerminalDropDownMenuState) -> Unit
 ) {
     var isChooseAssetDropMenuExpanded by rememberSaveable { mutableStateOf(false) }
     Column(
@@ -137,7 +150,7 @@ fun ShowAssetsDropMenu(
                 modifier = Modifier.clickable {
                     isChooseAssetDropMenuExpanded = !isChooseAssetDropMenuExpanded
                 },
-                text = "Asset : ${terminalState.value.selectedAsset.symbol.trim()}"
+                text = "Asset : ${terminalChartState.value.selectedAsset.symbol.trim()}"
             )
             Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = {
@@ -162,7 +175,7 @@ fun ShowAssetsDropMenu(
 
 
         ) {
-            val currentAssetsList: List<Asset> = when (terminalState.value.selectedOption) {
+            val currentAssetsList: List<Asset> = when (terminalChartState.value.selectedOption) {
                 AssetList.STOCKS -> {
                     StockList().stockList
                 }
@@ -182,7 +195,7 @@ fun ShowAssetsDropMenu(
                         .border(1.dp, Color.LightGray),
                     onClick = {
                         onAssetSelected(
-                            terminalState.value.copy(
+                            terminalChartState.value.copy(
                                 selectedAsset = Asset(
                                     asset.symbol.trim(),
                                     asset.description.trim()

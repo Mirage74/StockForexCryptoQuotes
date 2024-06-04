@@ -12,14 +12,12 @@ import kotlinx.parcelize.Parcelize
 import kotlin.math.roundToInt
 
 @Parcelize
-data class TerminalState(
+data class TerminalChartState(
     val barList: List<Bar>,
     val visibleBarsCount: Int = 100,
     val terminalWidth: Float = 1f,
     val terminalHeight: Float = 2f,
-    val scrolledBy: Float = 0f,
-    val selectedOption: AssetList = AssetList.STOCKS,
-    val selectedAsset: Asset = Asset.DEFAULT_STOCK
+    val scrolledBy: Float = 0f
 ) : Parcelable {
     val barWidth: Float
         get() = terminalWidth / visibleBarsCount
@@ -37,8 +35,16 @@ data class TerminalState(
         get() = terminalHeight / (max - min)
 }
 @Composable
-fun rememberTerminalState(bars: List<Bar>, selectedOption: AssetList, selectedAsset: Asset, width: Float, height: Float): MutableState<TerminalState> {
+fun rememberTerminalChartState(
+    bars: List<Bar>,
+    width: Float,
+    height: Float
+): MutableState<TerminalChartState> {
     return rememberSaveable(bars.hashCode()) {
-        mutableStateOf(TerminalState(barList = bars, selectedOption = selectedOption, selectedAsset = selectedAsset, terminalWidth = width, terminalHeight = height))
+        mutableStateOf(TerminalChartState(
+            barList = bars,
+            terminalWidth = width,
+            terminalHeight = height
+        ))
     }
 }

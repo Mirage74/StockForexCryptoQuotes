@@ -17,8 +17,8 @@ class TerminalViewModel @Inject constructor(
 
     private val quotesFlow = getQuotesUseCase()
 
-    fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList) {
-        refreshQuotesUseCase(timeFrame, asset, option)
+    fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList, isUserTokenSelected: Boolean) {
+        refreshQuotesUseCase(timeFrame, asset, option, isUserTokenSelected)
     }
 
     val state = quotesFlow
@@ -31,7 +31,8 @@ class TerminalViewModel @Inject constructor(
                         barList = it.barList,
                         timeFrame = it.timeFrame,
                         selectedOption = it.selectedOption,
-                        selectedAsset = it.selectedAsset
+                        selectedAsset = it.selectedAsset,
+                        isUserTokenSelected = it.isUserTokenSelected
                     ) as TerminalScreenState
                 } else {
                     TerminalScreenState.Loading

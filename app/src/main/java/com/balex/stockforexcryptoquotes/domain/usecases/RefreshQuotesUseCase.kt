@@ -10,7 +10,7 @@ class RefreshQuotesUseCase @Inject constructor(
     private val repository: TerminalRepository
 ) {
 
-    operator fun invoke(timeFrame: TimeFrame, asset: Asset, option: AssetList) {
-        return repository.refreshQuotes(timeFrame, asset, option)
+    operator fun invoke(timeFrame: TimeFrame, asset: Asset, option: AssetList, isUserTokenSelected: Boolean) {
+        return repository.refreshQuotes(timeFrame, asset, option, isUserTokenSelected)
     }
 }

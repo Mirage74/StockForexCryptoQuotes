@@ -13,6 +13,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,9 +27,10 @@ import com.balex.stockforexcryptoquotes.domain.entity.Asset
 import com.balex.stockforexcryptoquotes.domain.entity.AssetList
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import com.balex.stockforexcryptoquotes.presentation.getApplicationComponent
+import com.balex.stockforexcryptoquotes.presentation.main.TerminalDropDownMenuState
 import com.balex.stockforexcryptoquotes.presentation.main.TerminalScreenState
 import com.balex.stockforexcryptoquotes.presentation.main.TerminalViewModel
-import com.balex.stockforexcryptoquotes.presentation.main.rememberTerminalState
+import com.balex.stockforexcryptoquotes.presentation.main.rememberTerminalChartState
 import com.balex.stockforexcryptoquotes.ui.theme.StockForexCryptoQuotesTheme
 
 private val TIME_FRAME_DEFAULT = TimeFrame.HOUR_1
@@ -44,26 +47,38 @@ fun Terminal(
         val screenState = viewModel.state.collectAsState(TerminalScreenState.Initial)
         when (val currentState = screenState.value) {
             is TerminalScreenState.Content -> {
+
                 val currentWidth =
                     LocalConfiguration.current.screenWidthDp * LocalDensity.current.density
                 val currentHeight =
                     LocalConfiguration.current.screenHeightDp * LocalDensity.current.density
-                val terminalState =
-                    rememberTerminalState(
+                val terminalChartState =
+                    rememberTerminalChartState(
                         bars = currentState.barList,
-                        selectedOption = currentState.selectedOption,
-                        selectedAsset = currentState.selectedAsset,
                         currentWidth,
                         currentHeight
                     )
+
+                val dropDownMenuState =
+                    rememberSaveable(currentState.selectedAsset.hashCode()) {
+                        mutableStateOf(
+                            TerminalDropDownMenuState(
+                                selectedOption = currentState.selectedOption,
+                                selectedAsset = currentState.selectedAsset
+                            )
+                        )
+                    }
+
+
                 Chart(
                     modifier = modifier,
-                    terminalState = terminalState,
-                    onTerminalStateChanged = {
-                        terminalState.value = it
+                    terminalChartState = terminalChartState,
+                    onTerminalChartStateChanged = {
+                        terminalChartState.value = it
                     },
                     timeFrame = currentState.timeFrame
                 )
+
 
                 Column {
                     TimeFrames(
@@ -71,32 +86,46 @@ fun Terminal(
                         onTimeFrameSelected = {
                             viewModel.refreshQuotes(
                                 it,
-                                terminalState.value.selectedAsset,
-                                terminalState.value.selectedOption
+                                dropDownMenuState.value.selectedAsset,
+                                dropDownMenuState.value.selectedOption,
+                                currentState.isUserTokenSelected
                             )
                         }
                     )
+
+
                     DropDownAssetsType(
-                        terminalState,
-                        onTerminalStateChanged = {
-                            terminalState.value = it
+                        dropDownMenuState = dropDownMenuState,
+                        onDropDownMenuStateChanged = {
+                            dropDownMenuState.value = it
                         },
                         onAssetSelected = {
-                            terminalState.value = it
+                            dropDownMenuState.value = it
                             viewModel.refreshQuotes(
                                 currentState.timeFrame,
-                                terminalState.value.selectedAsset,
-                                terminalState.value.selectedOption
+                                dropDownMenuState.value.selectedAsset,
+                                dropDownMenuState.value.selectedOption,
+                                currentState.isUserTokenSelected
                             )
                         }
                     )
-                    RadioButtonWithTextField()
+                    RadioButtonWithTextField(
+                        isUserTokenSelected = currentState.isUserTokenSelected,
+                        onTerminalRadioButtonStateChanged = {
+                            viewModel.refreshQuotes(
+                                currentState.timeFrame,
+                                dropDownMenuState.value.selectedAsset,
+                                dropDownMenuState.value.selectedOption,
+                                !currentState.isUserTokenSelected
+                            )
+                        },
+                    )
                 }
 
                 currentState.barList.firstOrNull()?.let {
                     Prices(
                         modifier = modifier,
-                        terminalState,
+                        terminalChartState,
                         lastPrice = it.close
                     )
                 }
@@ -120,7 +149,8 @@ fun Terminal(
                         viewModel.refreshQuotes(
                             TIME_FRAME_DEFAULT,
                             Asset.DEFAULT_STOCK,
-                            AssetList.STOCKS
+                            AssetList.STOCKS,
+                            false
                         )
                     }
                 )
@@ -132,11 +162,6 @@ fun Terminal(
         }
     }
 }
-
-
-
-
-
 
 
 @Composable

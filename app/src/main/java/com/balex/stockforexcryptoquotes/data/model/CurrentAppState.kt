@@ -6,11 +6,12 @@ import com.balex.stockforexcryptoquotes.domain.entity.Bar
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
 import java.util.Collections
 
-data class QuotesAndFrame (
-    val barList: List<Bar> = Collections.emptyList(),
+data class CurrentAppState (
+    val barList: List<Bar> = listOf(),
     val timeFrame: TimeFrame = TimeFrame.HOUR_1,
     val isLoading: Boolean = false,
     val isErrorInitialLoading: Boolean = false,
     val selectedOption: AssetList = AssetList.STOCKS,
-    val selectedAsset: Asset = Asset.DEFAULT_STOCK
+    val selectedAsset: Asset = Asset.DEFAULT_STOCK,
+    val isUserTokenSelected: Boolean = false
 )

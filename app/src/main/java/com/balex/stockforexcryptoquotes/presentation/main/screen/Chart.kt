@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.balex.stockforexcryptoquotes.domain.entity.Bar
 import com.balex.stockforexcryptoquotes.domain.entity.TimeFrame
-import com.balex.stockforexcryptoquotes.presentation.main.TerminalState
+import com.balex.stockforexcryptoquotes.presentation.main.TerminalChartState
 import java.util.Calendar
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -35,12 +35,12 @@ private const val MIN_VISIBLE_BARS_COUNT = 20
 @Composable
 fun Chart(
     modifier: Modifier = Modifier,
-    terminalState: State<TerminalState>,
-    onTerminalStateChanged: (TerminalState) -> Unit,
+    terminalChartState: State<TerminalChartState>,
+    onTerminalChartStateChanged: (TerminalChartState) -> Unit,
     timeFrame: TimeFrame
 
 ) {
-    val currentState = terminalState.value
+    val currentState = terminalChartState.value
 
     val transformableState = rememberTransformableState { zoomChange, panChange, _ ->
 
@@ -51,7 +51,7 @@ fun Chart(
             .coerceAtLeast(0f)
             .coerceAtMost(currentState.barList.size * currentState.barWidth - currentState.terminalWidth)
 
-        onTerminalStateChanged(
+        onTerminalChartStateChanged(
             currentState.copy(
                 visibleBarsCount = visibleBarsCount,
                 scrolledBy = scrolledBy
@@ -73,7 +73,7 @@ fun Chart(
             )
             .transformable(transformableState)
             .onSizeChanged {
-                onTerminalStateChanged(
+                onTerminalChartStateChanged(
                     currentState.copy(
                         terminalWidth = it.width.toFloat(),
                         terminalHeight = (it.height).toFloat()

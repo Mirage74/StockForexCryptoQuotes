@@ -17,15 +17,15 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.balex.stockforexcryptoquotes.presentation.main.TerminalState
+import com.balex.stockforexcryptoquotes.presentation.main.TerminalChartState
 
 @Composable
 fun Prices(
     modifier: Modifier = Modifier,
-    terminalState: State<TerminalState>,
+    terminalChartState: State<TerminalChartState>,
     lastPrice: Float
 ) {
-    val currentState = terminalState.value
+    val currentState = terminalChartState.value
     val textMeasurer = rememberTextMeasurer()
     val max = currentState.max
     val min = currentState.min
