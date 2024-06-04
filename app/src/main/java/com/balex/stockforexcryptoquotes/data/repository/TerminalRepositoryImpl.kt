@@ -26,6 +26,10 @@ class TerminalRepositoryImpl @Inject constructor(
     private val mapper: QuotesMapper
 ) : TerminalRepository {
 
+    private val defaultToken =  ApiService.API_TOKEN
+    private var userToken =  NO_USER_TOKEN_SET
+
+
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
 
@@ -71,10 +75,9 @@ class TerminalRepositoryImpl @Inject constructor(
         _currentAppStateLastState = _currentAppState
         coroutineScope.launch(exceptionHandler) {
             _currentAppState = CurrentAppState(isLoading = true)
-            var token = ApiService.API_TOKEN
-            if (isUserTokenSelected) {
-                //token = "AAA"
-            }
+//            if (isUserTokenSelected) {
+//                currentToken =
+//            }
             isCurrentAppStateNeedRefreshFlow.emit(Unit)
             val newCurrentAppState = CurrentAppState(
                 mapper.mapResponseToQuotes(
@@ -82,7 +85,7 @@ class TerminalRepositoryImpl @Inject constructor(
                         timeFrame = timeFrame.value,
                         asset_code = asset.symbol,
                         dateTo = getCurrentDate(),
-                        apiToken = token
+                        apiToken = defaultToken
                     ).barList
                 ),
                 timeFrame,
@@ -95,10 +98,17 @@ class TerminalRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun setUserToken(token: String) {
+        userToken = token
+    }
+
     private fun getCurrentDate(): String {
         val currentDate = LocalDate.now()
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         return currentDate.format(formatter)
     }
+companion object {
+    const val NO_USER_TOKEN_SET = "NO_USER_TOKEN_SET"
+}
 
 }

@@ -1,5 +1,6 @@
 package com.balex.stockforexcryptoquotes.presentation.main.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +27,8 @@ import com.balex.stockforexcryptoquotes.presentation.main.TerminalChartState
 @Composable
 fun RadioButtonWithTextField(
     isUserTokenSelected: Boolean,
-    onTerminalRadioButtonStateChanged: () -> Unit
+    onTerminalRadioButtonStateChanged: () -> Unit,
+    onTokenSaved: (String) -> Unit
 ) {
     var isRadioButtonUserTokenChecked by remember { mutableStateOf(isUserTokenSelected) }
     var textFieldValue by remember { mutableStateOf("") }
@@ -42,12 +44,17 @@ fun RadioButtonWithTextField(
                 ),
                 selected = isRadioButtonUserTokenChecked,
                 onClick = {
-                    isRadioButtonUserTokenChecked = !isRadioButtonUserTokenChecked
+                    isRadioButtonUserTokenChecked = true
                     onTerminalRadioButtonStateChanged()
                 }
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
+                modifier = Modifier
+                    .clickable {
+                        isRadioButtonUserTokenChecked = true
+                        onTerminalRadioButtonStateChanged()
+                    },
                 text = "use user's token",
                 color = Color.White
             )
@@ -59,11 +66,13 @@ fun RadioButtonWithTextField(
                 ),
                 selected = !isRadioButtonUserTokenChecked,
                 onClick = {
-                    isRadioButtonUserTokenChecked = !isRadioButtonUserTokenChecked
+                    isRadioButtonUserTokenChecked = false
                 }
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
+                modifier = Modifier
+                    .clickable{isRadioButtonUserTokenChecked = false},
                 text = "use default token",
                 color = Color.White
             )
@@ -80,7 +89,9 @@ fun RadioButtonWithTextField(
                 Button(
                     modifier = Modifier
                         .weight(1f),
-                    onClick = { onTerminalRadioButtonStateChanged() }
+                    onClick = {
+                        onTokenSaved(textFieldValue)
+                    }
                 )
                 {
                     Text(text = "SAVE")

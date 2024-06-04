@@ -10,4 +10,6 @@ interface TerminalRepository {
     fun getQuotes(): StateFlow<CurrentAppState>
 
     fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList, isUserTokenSelected: Boolean)
+
+    fun setUserToken(token: String)
 }

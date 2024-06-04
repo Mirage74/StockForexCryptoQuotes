@@ -1,5 +1,6 @@
 package com.balex.stockforexcryptoquotes.presentation.main.screen
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -32,18 +34,27 @@ import com.balex.stockforexcryptoquotes.presentation.main.TerminalScreenState
 import com.balex.stockforexcryptoquotes.presentation.main.TerminalViewModel
 import com.balex.stockforexcryptoquotes.presentation.main.rememberTerminalChartState
 import com.balex.stockforexcryptoquotes.ui.theme.StockForexCryptoQuotesTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 private val TIME_FRAME_DEFAULT = TimeFrame.HOUR_1
 
 @Composable
 fun Terminal(
-    modifier: Modifier = Modifier
+    context: Context,
+    modifier: Modifier = Modifier,
 ) {
 
     StockForexCryptoQuotesTheme {
         val component = getApplicationComponent()
         val viewModel: TerminalViewModel =
             viewModel(factory = component.getViewModelFactory())
+
+        LaunchedEffect(Unit) {
+            viewModel.getTokenFromDataStoreAndSetToRepository(context)
+        }
+
         val screenState = viewModel.state.collectAsState(TerminalScreenState.Initial)
         when (val currentState = screenState.value) {
             is TerminalScreenState.Content -> {
@@ -119,6 +130,18 @@ fun Terminal(
                                 !currentState.isUserTokenSelected
                             )
                         },
+                        onTokenSaved = {
+                            CoroutineScope(Dispatchers.Default).launch {
+                                viewModel.saveTokenToDataStore(context, it)
+                            }
+                            viewModel.refreshQuotes(
+                                currentState.timeFrame,
+                                dropDownMenuState.value.selectedAsset,
+                                dropDownMenuState.value.selectedOption,
+                                !currentState.isUserTokenSelected
+                            )
+
+                        }
                     )
                 }
 
