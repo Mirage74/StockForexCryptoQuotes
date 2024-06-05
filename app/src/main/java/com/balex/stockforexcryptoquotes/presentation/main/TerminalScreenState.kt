@@ -19,7 +19,8 @@ sealed class TerminalScreenState {
         val timeFrame: TimeFrame,
         val selectedOption: AssetList,
         val selectedAsset: Asset,
-        val isUserTokenSelected: Boolean
+        val isUserTokenSelected: Boolean,
+        val userToken: String
     ) : TerminalScreenState()
 
 }

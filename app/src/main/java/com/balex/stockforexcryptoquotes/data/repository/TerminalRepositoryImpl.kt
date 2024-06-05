@@ -1,5 +1,8 @@
 package com.balex.stockforexcryptoquotes.data.repository
 
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import com.balex.stockforexcryptoquotes.data.datastore.Storage
 import com.balex.stockforexcryptoquotes.data.mapper.QuotesMapper
 import com.balex.stockforexcryptoquotes.data.model.CurrentAppState
 import com.balex.stockforexcryptoquotes.data.network.ApiService
@@ -23,20 +26,21 @@ import javax.inject.Inject
 
 class TerminalRepositoryImpl @Inject constructor(
     private val apiService: ApiService,
-    private val mapper: QuotesMapper
+    private val mapper: QuotesMapper,
+    application: Application
 ) : TerminalRepository {
 
     private val defaultToken =  ApiService.API_TOKEN
-    private var userToken =  NO_USER_TOKEN_SET
-
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
 
         _currentAppState = if (_currentAppStateLastState.barList.isEmpty()) {
+            //Storage.saveToken(application, defaultToken)
             CurrentAppState(isErrorInitialLoading = true)
         } else {
-            _currentAppStateLastState
+            //Storage.saveToken(application, defaultToken)
+            _currentAppStateLastState.copy(isUserTokenSelected = false, userToken = NO_USER_TOKEN_SET)
         }
         coroutineScope.launch() {
             isCurrentAppStateNeedRefreshFlow.emit(Unit)
@@ -56,7 +60,8 @@ class TerminalRepositoryImpl @Inject constructor(
     override fun getQuotes(): StateFlow<CurrentAppState> = flow {
         coroutineScope.launch(exceptionHandler) {
             val newCurrentAppState = CurrentAppState(
-                mapper.mapResponseToQuotes(apiService.loadBars(dateTo = getCurrentDate()).barList)
+                mapper.mapResponseToQuotes(apiService.loadBars(dateTo = getCurrentDate()).barList),
+                userToken = _currentAppState.userToken
             )
             _currentAppState = newCurrentAppState
             isCurrentAppStateNeedRefreshFlow.emit(Unit)
@@ -74,10 +79,15 @@ class TerminalRepositoryImpl @Inject constructor(
     override fun refreshQuotes(timeFrame: TimeFrame, asset: Asset, option: AssetList, isUserTokenSelected: Boolean) {
         _currentAppStateLastState = _currentAppState
         coroutineScope.launch(exceptionHandler) {
+
+            val currentToken = if (isUserTokenSelected && (_currentAppState.userToken != NO_USER_TOKEN_SET)) {
+                _currentAppState.userToken
+            } else {
+                defaultToken
+            }
+
             _currentAppState = CurrentAppState(isLoading = true)
-//            if (isUserTokenSelected) {
-//                currentToken =
-//            }
+
             isCurrentAppStateNeedRefreshFlow.emit(Unit)
             val newCurrentAppState = CurrentAppState(
                 mapper.mapResponseToQuotes(
@@ -85,13 +95,14 @@ class TerminalRepositoryImpl @Inject constructor(
                         timeFrame = timeFrame.value,
                         asset_code = asset.symbol,
                         dateTo = getCurrentDate(),
-                        apiToken = defaultToken
+                        apiToken = currentToken
                     ).barList
                 ),
                 timeFrame,
                 selectedOption = option,
                 selectedAsset = asset,
-                isUserTokenSelected = isUserTokenSelected
+                isUserTokenSelected = isUserTokenSelected,
+                userToken = currentToken
             )
             _currentAppState = newCurrentAppState
             isCurrentAppStateNeedRefreshFlow.emit(Unit)
@@ -99,7 +110,20 @@ class TerminalRepositoryImpl @Inject constructor(
     }
 
     override fun setUserToken(token: String) {
-        userToken = token
+        val newCurrentAppState = _currentAppState.copy(userToken = token)
+        _currentAppState = newCurrentAppState
+        coroutineScope.launch() {
+            isCurrentAppStateNeedRefreshFlow.emit(Unit)
+        }
+
+    }
+
+    override fun changeRadioButtonSelected() {
+        val newCurrentAppState = _currentAppState.copy(isUserTokenSelected = !_currentAppState.isUserTokenSelected)
+        _currentAppState = newCurrentAppState
+        coroutineScope.launch() {
+            isCurrentAppStateNeedRefreshFlow.emit(Unit)
+        }
     }
 
     private fun getCurrentDate(): String {

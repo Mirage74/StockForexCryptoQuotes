@@ -51,9 +51,8 @@ fun Terminal(
         val viewModel: TerminalViewModel =
             viewModel(factory = component.getViewModelFactory())
 
-        LaunchedEffect(Unit) {
-            viewModel.getTokenFromDataStoreAndSetToRepository(context)
-        }
+        viewModel.getTokenFromStorageAndSetToRepository(context)
+
 
         val screenState = viewModel.state.collectAsState(TerminalScreenState.Initial)
         when (val currentState = screenState.value) {
@@ -122,23 +121,17 @@ fun Terminal(
                     )
                     RadioButtonWithTextField(
                         isUserTokenSelected = currentState.isUserTokenSelected,
-                        onTerminalRadioButtonStateChanged = {
-                            viewModel.refreshQuotes(
-                                currentState.timeFrame,
-                                dropDownMenuState.value.selectedAsset,
-                                dropDownMenuState.value.selectedOption,
-                                !currentState.isUserTokenSelected
-                            )
+                        currentToken = currentState.userToken,
+                        onSelectedButtonChanged = {
+                            viewModel.changeRadioButtonSelected()
                         },
                         onTokenSaved = {
-                            CoroutineScope(Dispatchers.Default).launch {
-                                viewModel.saveTokenToDataStore(context, it)
-                            }
+                            viewModel.saveTokenToStorageAndRepository(context, it)
                             viewModel.refreshQuotes(
                                 currentState.timeFrame,
                                 dropDownMenuState.value.selectedAsset,
                                 dropDownMenuState.value.selectedOption,
-                                !currentState.isUserTokenSelected
+                                true
                             )
 
                         }

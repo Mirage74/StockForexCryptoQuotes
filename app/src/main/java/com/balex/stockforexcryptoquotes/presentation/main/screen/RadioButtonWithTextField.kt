@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.RadioButton
@@ -22,16 +23,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.balex.stockforexcryptoquotes.data.datastore.Storage
 import com.balex.stockforexcryptoquotes.presentation.main.TerminalChartState
 
 @Composable
 fun RadioButtonWithTextField(
     isUserTokenSelected: Boolean,
-    onTerminalRadioButtonStateChanged: () -> Unit,
+    currentToken: String,
+    onSelectedButtonChanged: () -> Unit,
     onTokenSaved: (String) -> Unit
 ) {
     var isRadioButtonUserTokenChecked by remember { mutableStateOf(isUserTokenSelected) }
-    var textFieldValue by remember { mutableStateOf("") }
+    var isShowUserTokenField by remember(isRadioButtonUserTokenChecked.hashCode()) {
+        mutableStateOf(
+            true
+        )
+    }
+    var textFieldValue by remember { mutableStateOf(currentToken) }
 
     Column {
         Row(
@@ -44,20 +52,30 @@ fun RadioButtonWithTextField(
                 ),
                 selected = isRadioButtonUserTokenChecked,
                 onClick = {
-                    isRadioButtonUserTokenChecked = true
-                    onTerminalRadioButtonStateChanged()
+                    if (!isRadioButtonUserTokenChecked) {
+                        isRadioButtonUserTokenChecked = true
+                        onSelectedButtonChanged()
+                        isShowUserTokenField = true
+                    }
+                    isShowUserTokenField = !isShowUserTokenField
                 }
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 modifier = Modifier
                     .clickable {
-                        isRadioButtonUserTokenChecked = true
-                        onTerminalRadioButtonStateChanged()
+                        if (!isRadioButtonUserTokenChecked) {
+                            isRadioButtonUserTokenChecked = true
+                            onSelectedButtonChanged()
+                            isShowUserTokenField = true
+                        }
+                        isShowUserTokenField = !isShowUserTokenField
                     },
                 text = "use user's token",
                 color = Color.White
             )
+
+
 
             RadioButton(
                 colors = RadioButtonDefaults.colors(
@@ -66,30 +84,47 @@ fun RadioButtonWithTextField(
                 ),
                 selected = !isRadioButtonUserTokenChecked,
                 onClick = {
-                    isRadioButtonUserTokenChecked = false
+                    if (isRadioButtonUserTokenChecked) {
+                        isRadioButtonUserTokenChecked = false
+                        onSelectedButtonChanged()
+                    }
+
                 }
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 modifier = Modifier
-                    .clickable{isRadioButtonUserTokenChecked = false},
+                    .clickable {
+                        if (isRadioButtonUserTokenChecked) {
+                            isRadioButtonUserTokenChecked = false
+                            onSelectedButtonChanged()
+                        }
+                    },
                 text = "use default token",
                 color = Color.White
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        if (isRadioButtonUserTokenChecked) {
-            Row {
+        if (isRadioButtonUserTokenChecked && isShowUserTokenField) {
+            Row (
+                modifier = Modifier
+                .imePadding()
+            ) {
+                if ((textFieldValue == Storage.NO_USER_TOKEN_IN_SHARED_PREFERENCES) || (textFieldValue == NO_USER_TOKEN_SET)) {
+                    textFieldValue = ""
+                }
                 TextField(
                     value = textFieldValue,
                     onValueChange = { textFieldValue = it },
-                    label = { Text("Enter token here") },
-                    modifier = Modifier.weight(4f)
+                    label = { Text("enter token:") },
+                    modifier = Modifier
+                        .weight(3f)
                 )
                 Button(
                     modifier = Modifier
                         .weight(1f),
                     onClick = {
+                        isShowUserTokenField = false
                         onTokenSaved(textFieldValue)
                     }
                 )
@@ -101,3 +136,6 @@ fun RadioButtonWithTextField(
 
     }
 }
+
+const val NO_USER_TOKEN_SET = "NO_USER_TOKEN_SET"
+

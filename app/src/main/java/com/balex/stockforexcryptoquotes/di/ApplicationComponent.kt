@@ -1,6 +1,8 @@
 package com.balex.stockforexcryptoquotes.di
 
+import android.app.Application
 import android.content.Context
+import com.balex.stockforexcryptoquotes.data.datastore.Storage
 import com.balex.stockforexcryptoquotes.presentation.ViewModelFactory
 
 import dagger.BindsInstance
@@ -17,11 +19,12 @@ interface ApplicationComponent {
 
     fun getViewModelFactory(): ViewModelFactory
 
+
     @Component.Factory
     interface Factory {
 
         fun create(
-            @BindsInstance context: Context
+            @BindsInstance application: Application
         ): ApplicationComponent
     }
 

@@ -67,7 +67,6 @@ dependencies {
     implementation(libs.converter.gson)
     implementation(libs.retrofit)
     implementation(libs.logging.interceptor)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
 
     implementation(libs.dagger)

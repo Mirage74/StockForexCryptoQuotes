@@ -91,7 +91,7 @@ fun ShowOptionsDropMenu(
             },
 
             modifier = Modifier
-                .width(100.dp)
+                .width(150.dp)
                 .background(Color.White)
                 .padding(0.dp)
                 .border(1.dp, Color.Black)
