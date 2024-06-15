@@ -1,8 +1,7 @@
 package com.balex.stockforexcryptoquotes.data.repository
 
 import android.app.Application
-import androidx.compose.ui.platform.LocalContext
-import com.balex.stockforexcryptoquotes.data.datastore.Storage
+import com.balex.stockforexcryptoquotes.BuildConfig
 import com.balex.stockforexcryptoquotes.data.mapper.QuotesMapper
 import com.balex.stockforexcryptoquotes.data.model.CurrentAppState
 import com.balex.stockforexcryptoquotes.data.network.ApiService
@@ -30,7 +29,7 @@ class TerminalRepositoryImpl @Inject constructor(
     application: Application
 ) : TerminalRepository {
 
-    private val defaultToken =  ApiService.API_TOKEN
+    private val defaultToken =  BuildConfig.POLYGON_API_KEY
 
     private val coroutineScope = CoroutineScope(SupervisorJob())
     private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
@@ -60,7 +59,7 @@ class TerminalRepositoryImpl @Inject constructor(
     override fun getQuotes(): StateFlow<CurrentAppState> = flow {
         coroutineScope.launch(exceptionHandler) {
             val newCurrentAppState = CurrentAppState(
-                mapper.mapResponseToQuotes(apiService.loadBars(dateTo = getCurrentDate()).barList),
+                mapper.mapResponseToQuotes(apiService.loadBars(dateTo = getCurrentDate(), apiToken = defaultToken).barList),
                 userToken = _currentAppState.userToken
             )
             _currentAppState = newCurrentAppState

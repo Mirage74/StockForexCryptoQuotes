@@ -17,7 +17,7 @@ interface ApiService {
         @Path("dateTo") dateTo: String = DATE_TO,
         @Query("sort") sort: String = SORT,
         @Query("limit") limit: Int = LIMIT,
-        @Query("apiKey") apiToken: String = API_TOKEN
+        @Query("apiKey") apiToken: String
     ): ResultDto
 
     companion object {
@@ -27,6 +27,5 @@ interface ApiService {
 
         const val SORT = "desc"
         const val LIMIT = 50000
-        const val API_TOKEN = "ssVve8W0pzLJm1a0uVMt1jspmPhw69L8"
     }
 }
